@@ -8,18 +8,17 @@
 package com.ps.odl.impl;
 
 import com.google.common.util.concurrent.*;
-import static org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType.DELETE;
-import static org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType.WRITE;
+
 import static org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType.CONFIGURATION;
 import static org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType.OPERATIONAL;
 import static org.opendaylight.yangtools.yang.common.RpcError.ErrorType.APPLICATION;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
+
+import org.opendaylight.controller.md.sal.binding.api.*;
 import org.opendaylight.controller.md.sal.common.api.data.OptimisticLockFailedException;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
 import org.opendaylight.yang.gen.v1.http.netconfcentral.org.ns.toaster.rev180618.*;
 import org.opendaylight.yang.gen.v1.http.netconfcentral.org.ns.toaster.rev180618.Toaster.ToasterStatus;
+import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcError;
 import org.opendaylight.yangtools.yang.common.RpcResult;
@@ -29,15 +28,17 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType.OPERATIONAL;
 
-public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
+
+public class OpendaylightToaster implements OdltoasterService, DataTreeChangeListener<Toaster>, AutoCloseable {
 
     private static final InstanceIdentifier<Toaster> TOASTER_IID = InstanceIdentifier.builder(Toaster.class).build();
     private static final DisplayString TOASTER_MANUFACTURER = new DisplayString("Opendaylight");
@@ -52,6 +53,8 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
     // The following holds the Future for the current make toast task.
     // This is used to cancel the current toast.
     private final AtomicReference<Future<?>> currentMakeToastTask = new AtomicReference<>();
+    private AtomicLong darknessFactor = new AtomicLong( 1000 );
+    private ListenerRegistration<OpendaylightToaster> dataTreeChangeListenerRegistration;
 
     public OpendaylightToaster() {
         executor = Executors.newFixedThreadPool(1);
@@ -66,6 +69,8 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
      * Method called when the blueprint container is created.
      */
     public void init() {
+        dataTreeChangeListenerRegistration = dataBroker.registerDataTreeChangeListener( new DataTreeIdentifier<>(CONFIGURATION, TOASTER_IID), this);
+
         setToasterStatusUp(null);
     }
 
@@ -90,6 +95,9 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
                     LOG.error("Delete of Toaster failed", failure);
                 }
             });
+        }
+        if (dataTreeChangeListenerRegistration != null) {
+            dataTreeChangeListenerRegistration.close();
         }
     }
 
@@ -224,6 +232,28 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
         return RpcResultBuilder.newWarning(APPLICATION, "in-use", "Toaster is busy", null, null, null);
     }
 
+    @Override
+    public void onDataTreeChanged(Collection<DataTreeModification<Toaster>> changes) {
+        for(DataTreeModification<Toaster> change: changes) {
+            DataObjectModification<Toaster> rootNode = change.getRootNode();
+            if(rootNode.getModificationType() == DataObjectModification.ModificationType.WRITE) {
+                Toaster oldToaster = rootNode.getDataBefore();
+                Toaster newToaster = rootNode.getDataAfter();
+                LOG.info("onDataTreeChanged - Toaster config with path {} was added or replaced: old Toaster: {}, new Toaster: {}",
+                        change.getRootPath().getRootIdentifier(), oldToaster, newToaster);
+
+                Long darkness = newToaster.getDarknessFactor();
+                if(darkness != null) {
+                    darknessFactor.set(darkness);
+                }
+            } else if(rootNode.getModificationType() == DataObjectModification.ModificationType.DELETE) {
+                LOG.info("onDataTreeChanged - Toaster config with path {} was deleted: old Toaster: {}",
+                        change.getRootPath().getRootIdentifier(), rootNode.getDataBefore());
+            }
+        }
+    }
+
+
     private class MakeToastTask implements Callable<Void> {
         final MakeToastInput toastRequest;
         final SettableFuture<RpcResult<Void>> futureResult;
@@ -238,7 +268,7 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
         public Void call() {
             try {
                 // make toast just sleeps for n seconds.
-                Thread.sleep(1000*toastRequest.getToasterDoneness());
+                Thread.sleep(OpendaylightToaster.this.darknessFactor.get()*toastRequest.getToasterDoneness());
             } catch (InterruptedException e) {
                 LOG.info ("Interrupted while making the toast");
             }
