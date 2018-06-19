@@ -23,4 +23,5 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <property name="dataBroker" ref="dataBroker"/>
   </bean>
 
+  <odl:rpc-implementation ref="toaster"/>
 </blueprint>
