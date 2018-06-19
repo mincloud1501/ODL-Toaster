@@ -16,6 +16,7 @@ import static org.opendaylight.yangtools.yang.common.RpcError.ErrorType.APPLICAT
 import org.opendaylight.controller.md.sal.binding.api.*;
 import org.opendaylight.controller.md.sal.common.api.data.OptimisticLockFailedException;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
+import org.opendaylight.controller.md.sal.common.util.jmx.AbstractMXBean;
 import org.opendaylight.yang.gen.v1.http.netconfcentral.org.ns.toaster.rev180618.*;
 import org.opendaylight.yang.gen.v1.http.netconfcentral.org.ns.toaster.rev180618.Toaster.ToasterStatus;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
@@ -38,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 
 
-public class OpendaylightToaster implements OdltoasterService, DataTreeChangeListener<Toaster>, AutoCloseable {
+public class OpendaylightToaster extends AbstractMXBean implements OdltoasterService,ToasterProviderRuntimeMXBean, DataTreeChangeListener<Toaster>, AutoCloseable {
 
     private static final InstanceIdentifier<Toaster> TOASTER_IID = InstanceIdentifier.builder(Toaster.class).build();
     private static final DisplayString TOASTER_MANUFACTURER = new DisplayString("Opendaylight");
@@ -54,9 +55,12 @@ public class OpendaylightToaster implements OdltoasterService, DataTreeChangeLis
     // This is used to cancel the current toast.
     private final AtomicReference<Future<?>> currentMakeToastTask = new AtomicReference<>();
     private AtomicLong darknessFactor = new AtomicLong( 1000 );
+    private final AtomicLong toastsMade = new AtomicLong(0);
+
     private ListenerRegistration<OpendaylightToaster> dataTreeChangeListenerRegistration;
 
     public OpendaylightToaster() {
+        super("OpendaylightToaster","toaster-provider",null);
         executor = Executors.newFixedThreadPool(1);
 
     }
@@ -69,9 +73,13 @@ public class OpendaylightToaster implements OdltoasterService, DataTreeChangeLis
      * Method called when the blueprint container is created.
      */
     public void init() {
+        LOG.info("Initializing...");
         dataTreeChangeListenerRegistration = dataBroker.registerDataTreeChangeListener( new DataTreeIdentifier<>(CONFIGURATION, TOASTER_IID), this);
 
         setToasterStatusUp(null);
+
+        // Register our MXBean.
+        register();
     }
 
     /**
@@ -79,6 +87,10 @@ public class OpendaylightToaster implements OdltoasterService, DataTreeChangeLis
      */
     @Override
     public void close() {
+        LOG.info("Closing...");
+
+        // Unregister our MXBean.
+        unregister();
 
         executor.shutdown();
         if (dataBroker != null) {
@@ -253,6 +265,25 @@ public class OpendaylightToaster implements OdltoasterService, DataTreeChangeLis
         }
     }
 
+    /**
+     * Accessor method implemented from the ToasterProviderRuntimeMXBean interface
+     */
+    @Override
+    public Long getToastsMade() {
+        return toastsMade.get();
+    }
+
+    /**
+     * JMX RPC call implemented from the ToasterProviderRuntimeMXBean interface
+     */
+
+    @Override
+    public void clearToastsMade() {
+        LOG.info("clearToastsMade");
+        toastsMade.set(0);
+
+    }
+
 
     private class MakeToastTask implements Callable<Void> {
         final MakeToastInput toastRequest;
@@ -269,6 +300,7 @@ public class OpendaylightToaster implements OdltoasterService, DataTreeChangeLis
             try {
                 // make toast just sleeps for n seconds.
                 Thread.sleep(OpendaylightToaster.this.darknessFactor.get()*toastRequest.getToasterDoneness());
+                toastsMade.incrementAndGet();
             } catch (InterruptedException e) {
                 LOG.info ("Interrupted while making the toast");
             }
