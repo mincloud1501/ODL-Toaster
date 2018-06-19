@@ -82,7 +82,7 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
             Futures.addCallback(tx.submit(), new FutureCallback<Void>() {
                 @Override
                 public void onSuccess(final Void result) {
-                    LOG.debug("Delete Toaster commit result: " + result);
+                    LOG.info("Delete Toaster commit result: " + result);
                 }
 
                 @Override
@@ -161,10 +161,10 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
                         toasterStatus = toasterData.get().getToasterStatus();
                     }
 
-                    LOG.debug("Read toaster status: {}", toasterStatus);
+                    LOG.info("Read toaster status: {}", toasterStatus);
 
                     if (toasterStatus == ToasterStatus.Up) {
-                        LOG.debug("Setting Toaster status to Down");
+                        LOG.info("Setting Toaster status to Down");
 
                         // We're not currently making toast - try to update the status to Down
                         // to indicate we're going to make toast. This acts as a lock to prevent
@@ -173,7 +173,7 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
                         return tx.submit();
                     }
 
-                    LOG.debug("Oops - already making toast!");
+                    LOG.info("Oops - already making toast!");
 
                     // Return an error since we are already making toast. This will get
                     // propagated to the commitFuture below which will interpret the null
@@ -198,20 +198,20 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
                     // now in progress, we should get ToasterStatus.Down and fail.
 
                     if (tries - 1 > 0) {
-                        LOG.debug("Got OptimisticLockFailedException - trying again");
+                        LOG.info("Got OptimisticLockFailedException - trying again");
                         checkStatusAndMakeToast(input, futureResult, tries - 1);
                     } else {
                         futureResult.set(RpcResultBuilder.<Void>failed()
                                 .withError(APPLICATION, ex.getMessage()).build());
                     }
                 } else if (ex instanceof TransactionCommitFailedException) {
-                    LOG.debug("Failed to commit Toaster status", ex);
+                    LOG.info("Failed to commit Toaster status", ex);
 
                     // Probably already making toast.
                     futureResult.set(RpcResultBuilder.<Void>failed()
                             .withRpcErrors(((TransactionCommitFailedException)ex).getErrorList()).build());
                 } else {
-                    LOG.debug("Unexpected error committing Toaster status", ex);
+                    LOG.info("Unexpected error committing Toaster status", ex);
                     futureResult.set(RpcResultBuilder.<Void>failed().withError(APPLICATION,
                             "Unexpected error committing Toaster status", ex).build());
                 }
@@ -238,7 +238,7 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
         public Void call() {
             try {
                 // make toast just sleeps for n seconds.
-                Thread.sleep(toastRequest.getToasterDoneness());
+                Thread.sleep(1000*toastRequest.getToasterDoneness());
             } catch (InterruptedException e) {
                 LOG.info ("Interrupted while making the toast");
             }
@@ -249,7 +249,7 @@ public class OpendaylightToaster implements OdltoasterService, AutoCloseable {
 
             setToasterStatusUp(result -> {
                 currentMakeToastTask.set(null);
-                LOG.debug("Toast done");
+                LOG.info("Toast done");
                 futureResult.set(RpcResultBuilder.<Void>success().build());
                 return null;
             });
