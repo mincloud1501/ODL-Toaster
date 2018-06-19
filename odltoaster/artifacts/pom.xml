@@ -35,7 +35,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>odltoaster-impl</artifactId>
+        <artifactId>toaster-provider</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

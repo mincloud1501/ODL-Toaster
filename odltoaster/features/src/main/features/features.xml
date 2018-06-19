@@ -19,13 +19,18 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <feature version='${mdsal.model.version}'>odl-mdsal-models</feature>
     <bundle>mvn:com.ps.odl/odltoaster-api/{{VERSION}}</bundle>
   </feature>
-  <feature name='odl-odltoaster' version='${project.version}' description='OpenDaylight :: odltoaster'>
+  <feature name='odl-odltoaster-provider' version='${project.version}' description='OpenDaylight :: odltoaster :: provider'>
     <feature version='${mdsal.version}'>odl-mdsal-broker</feature>
     <feature version='${project.version}'>odl-odltoaster-api</feature>
-    <bundle>mvn:com.ps.odl/odltoaster-impl/{{VERSION}}</bundle>
+    <bundle>mvn:com.ps.odl/toaster-provider/{{VERSION}}</bundle>
+  </feature>
+  <feature name='odl-odltoaster-consumer' version='${project.version}' description='OpenDaylight :: odltoaster :: consumer'>
+    <feature version='${mdsal.version}'>odl-mdsal-broker</feature>
+    <feature version='${project.version}'>odl-odltoaster-api</feature>
+    <bundle>mvn:com.ps.odl/toaster-consumer/{{VERSION}}</bundle>
   </feature>
   <feature name='odl-odltoaster-rest' version='${project.version}' description='OpenDaylight :: odltoaster :: REST'>
-    <feature version="${project.version}">odl-odltoaster</feature>
+    <feature version="${project.version}">odl-odltoaster-provider</feature>
     <feature version="${restconf.version}">odl-restconf</feature>
   </feature>
   <feature name='odl-odltoaster-ui' version='${project.version}' description='OpenDaylight :: odltoaster :: UI'>
@@ -34,7 +39,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <feature version="${dluxapps.version}">odl-dluxapps-yangman</feature>
   </feature>
   <feature name='odl-odltoaster-cli' version='${project.version}' description='OpenDaylight :: odltoaster :: CLI'>
-    <feature version="${project.version}">odl-odltoaster</feature>
+    <feature version="${project.version}">odl-odltoaster-provider</feature>
     <bundle>mvn:com.ps.odl/odltoaster-cli/{{VERSION}}</bundle>
   </feature>
 
