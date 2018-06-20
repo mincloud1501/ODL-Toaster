@@ -9,7 +9,7 @@
     organization "Netconf Central";
 
     contact
-      "Pranjal Sharma <pranjalsharma@gmail.com>";
+      "Pranjal Sharma <pranjalsharma3108@gmail.com>";
 
     description
       "YANG version of the TOASTER-MIB.";
