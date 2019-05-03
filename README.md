@@ -32,3 +32,32 @@ An example to understand the MD-SAL infrastructure within the OpenDaylight contr
 [INFO] ------------------------------------------------------------------------
 
 [INFO] Total time: 34:28 min
+
+├── api
+├── artifacts
+├── cli
+├── features
+├── it
+├── karaf
+├── toaster-consumer
+├── toaster-provider
+│   ├── pom.xml
+│   ├── target
+│   └── src
+│       └── main
+│           ├── java
+│           │   └── com
+│           │       └── ps
+│           │           └── odl
+│           │             └── impl
+│           │               └── OpendaylightToaster.java
+│           │               └── ToasterProviderRuntimeMXBean.java
+│           ├── resources
+│           │   └── org
+│           │       └── opendaylight
+│           │           └── blueprint
+│           │               └── toaster-provider.xml
+
+└── target
+└── src
+
