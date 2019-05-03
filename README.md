@@ -5,6 +5,7 @@ An example to understand the MD-SAL infrastructure within the OpenDaylight contr
 [INFO] Reactor Summary:
 [INFO]
 [INFO] ODL :: com.ps.odl :: odltoaster-api ................ SUCCESS [05:21 min]
+
 [INFO] ODL :: com.ps.odl :: toaster-provider .............. SUCCESS [ 50.565 s]
 [INFO] ODL :: com.ps.odl :: toaster-consumer .............. SUCCESS [ 14.785 s]
 [INFO] ODL :: com.ps.odl :: odltoaster-cli ................ SUCCESS [ 19.545 s]
