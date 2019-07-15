@@ -1,10 +1,7 @@
-# ODL-Toaster
+## ODL-Toaster
 An example to understand the MD-SAL infrastructure within the OpenDaylight controller
 
-Inline `code`
-
-Indented code
-
+```
   [INFO] ------------------------------------------------------------------------
   [INFO] Reactor Summary:
   [INFO]
@@ -21,3 +18,4 @@ Indented code
   [INFO] BUILD SUCCESS
   [INFO] ------------------------------------------------------------------------
   [INFO] Total time: 34:28 min
+```
